@@ -1,11 +1,12 @@
 import cv2
 import numpy as np
 import time
-
+global cnt
+cnt=0
 
 def load_yolo():
 
-    net=cv2.dnn.readNetFromDarknet("yolov3.cfg","yolov3.weights")
+    net=cv2.dnn.readNetFromDarknet("yolov3_testing.cfg","yolov3.weights")
 
     with open("coco.names", "r") as f:
       classes = [line.strip() for line in f.readlines()]
@@ -18,12 +19,20 @@ def load_yolo():
 def start_video(video_path):
    model, classes, colors, output_layers = load_yolo()
    cap = cv2.VideoCapture(video_path)
+   cnte=0
+   # out = cv2.VideoWriter('videos/proc.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 20.0, (416,416))
    while True:
-      _, frame = cap.read()
+      ret, frame = cap.read()
+      print(ret,cnte)
+      # cv2.imshow('Win',frame)
+      # cv2.waitKey(1500)
+
       height, width, channels = frame.shape
       blob, outputs = detect_objects(frame, model, output_layers)
       boxes, confs, class_ids = get_box_dimensions(outputs, height, width)
       draw_labels(boxes, confs, colors, class_ids, classes, frame)
+      cnte+=1
+      # out.write(img) #--- out----FUNC
       key = cv2.waitKey(1)
       if key == 27:
          break
@@ -72,13 +81,14 @@ def detect_objects(img, net, outputLayers):
 
 
 def draw_labels(boxes, confs, colors, class_ids, classes, img):
+   global cnt
    indexes = cv2.dnn.NMSBoxes(boxes, confs, 0.5, 0.4) #(0.2,0.2) // (0.7,0.6)
    font = cv2.FONT_HERSHEY_PLAIN
    # image_folder = 'data-set-race-01'
-   video_file = 'proc.mp4'
+   video_file = 'videos/proc.mp4'
    image_size = (416, 416)
    fps = 24
-   out = cv2.VideoWriter(video_file, cv2.VideoWriter_fourcc(*'MP4V'), fps, image_size)
+   # out = cv2.VideoWriter(video_file, cv2.VideoWriter_fourcc('M','P','E','G'), fps, image_size)
 
    for i in range(len(boxes)):
       if i in indexes:
@@ -87,13 +97,17 @@ def draw_labels(boxes, confs, colors, class_ids, classes, img):
          color = colors[i]
          cv2.rectangle(img, (x,y), (x+w, y+h), color, 2)
          cv2.putText(img, label, (x, y - 5), font, 1, color, 1)
-         out.write(img)
-   cv2.imshow("Image", img)
+         # out.write(img)
 
+   cv2.imshow("Image", img)
+   cv2.imwrite('frames/'+str(cnt)+'.jpg',img)
+   print('\t',cnt)
+   cnt += 1
 
 
 #----------------------------------MAIN -------------------
-if _name_ == '_main_':
-    video_path = 'test_Drone.mp4'
-    print('Opening ' + video_path + " .... ")
-    start_video(video_path)
+# if _name_ == '_main_':
+video_path = 'videos/test_Drone.mp4'
+print('Opening ' + video_path + " .... ")
+start_video(video_path)
+print('Done')
